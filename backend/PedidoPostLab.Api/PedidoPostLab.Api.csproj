@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+  </ItemGroup>
+
+</Project>
+<!-- Sdk.Web: o SDK de aplicações web. Ele já traz o Kestrel (servidor HTTP) e o Minimal API.
+Nullable enable: o compilador avisa quando algo pode ser null. É daí que vêm os string? e o = null! das entidades.
+ImplicitUsings: por isso você não precisa escrever using System; e outros comuns.
+Microsoft.Data.SqlClient: o driver que fala com o SQL Server -->

@@ -10,7 +10,7 @@ USE PedidoPostLab;
 -- Encerra o lote atual de comandos
 GO
 
--- Verifica se a tabela de usuários ('U') 'dbo.Clientes' ainda não existe
+-- Verifica se a tabela de usuários ('U') 'dbo.Clientes' não existir, cria a tabela
 IF OBJECT_ID(N'dbo.Clientes', N'U') IS NULL
 -- Inicia o bloco de execução condicional para criação da tabela e seus índices
 BEGIN
@@ -30,7 +30,7 @@ END
 -- Encerra o lote atual de comandos
 GO
 
--- Verifica se a tabela 'dbo.Produtos' ainda não existe
+-- Verifica se a tabela 'dbo.Produtos'não existir, cria a tabela
 IF OBJECT_ID(N'dbo.Produtos', N'U') IS NULL
 -- Inicia o bloco de execução condicional
 BEGIN
@@ -50,7 +50,7 @@ END
 -- Encerra o lote atual de comandos
 GO
 
--- Verifica se a tabela 'dbo.Pedidos' ainda não existe
+-- Verifica se a tabela 'dbo.Pedidos' não existir, cria a tabela
 IF OBJECT_ID(N'dbo.Pedidos', N'U') IS NULL
 -- Inicia o bloco de execução condicional
 BEGIN
@@ -78,7 +78,7 @@ END
 -- Encerra o lote atual de comandos
 GO
 
--- Verifica se a tabela associativa 'dbo.ItensPedido' ainda não existe
+-- Verifica se a tabela associativa 'dbo.ItensPedido' não existir, cria a tabela
 IF OBJECT_ID(N'dbo.ItensPedido', N'U') IS NULL
 -- Inicia o bloco de execução condicional
 BEGIN
