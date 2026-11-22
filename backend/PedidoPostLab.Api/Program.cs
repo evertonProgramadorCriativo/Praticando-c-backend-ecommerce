@@ -5,6 +5,10 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using PedidoPostLab.Api.Data;
+/**
+ * Importa o namespace que contém os endpoints de lookup para clientes e produtos.
+ */ 
+using PedidoPostLab.Api.Endpoints;
 
 /*
  * Inicializa o construtor da aplicação web (Minimal API), carregando as
@@ -114,6 +118,10 @@ app.MapGet("/health", async (
 /*
  * Inicia o servidor web e coloca a API para escutar e responder às requisições HTTP.
  */
+
+ /** rotas de lookup para clientes e produtos */
+app.MapLookups();
+
 app.Run();
 
  
