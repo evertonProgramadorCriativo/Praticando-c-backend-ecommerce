@@ -3,6 +3,8 @@
  * de comandos em bancos de dados SQL Server.
  */
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using PedidoPostLab.Api.Data;
 
 /*
  * Inicializa o construtor da aplicação web (Minimal API), carregando as
@@ -22,6 +24,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
  * especificação RFC 7807 (Problem Details), deixando os erros da API padronizados.
  */
 builder.Services.AddProblemDetails();
+/* * Registra o contexto de banco de dados (PedidosDbContext) como um serviço da aplicação,
+ * configurando-o para usar o SQL Server com a string de conexão obtida acima.
+ */
+builder.Services.AddDbContext<PedidosDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
 /*
  * Constrói a instância final da aplicação com todos os serviços e configurações definidos acima.
@@ -39,8 +46,13 @@ app.UseStatusCodePages();
 /*
  * Define o endpoint GET "/health" para verificar a saúde da API e do banco de dados.
  * Recebe um token de cancelamento (caso o cliente aborte a requisição) e o serviço de logs.
+ * conecta-se ao banco de dados, executa uma consulta para contar clientes e produtos,
+ * e retorna um JSON com o status da API e do banco.
  */
-app.MapGet("/health", async (CancellationToken cancellationToken, ILogger<Program> logger) =>
+app.MapGet("/health", async (
+    PedidosDbContext db,
+    CancellationToken cancellationToken, 
+    ILogger<Program> logger) =>
 {
     try
     {
@@ -65,6 +77,13 @@ app.MapGet("/health", async (CancellationToken cancellationToken, ILogger<Progra
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         await reader.ReadAsync(cancellationToken);
 
+/*
+         * Conta a quantidade de produtos usando o Entity Framework, para demonstrar
+         * que a API consegue acessar o banco de dados tanto via SQL direto quanto via EF.
+         */
+           var produtosViaEf = await db.Produtos.CountAsync(cancellationToken);
+
+
         /*
          * Retorna status HTTP 200 (OK) com um objeto JSON confirmando que o banco está
          * conectado e exibindo a quantidade de clientes e produtos encontrados.
@@ -74,7 +93,8 @@ app.MapGet("/health", async (CancellationToken cancellationToken, ILogger<Progra
             status = "ok",
             banco = "conectado",
             clientes = reader.GetInt32(0),
-            produtos = reader.GetInt32(1)
+            produtos = reader.GetInt32(1),
+            produtosViaEf
         });
     }
     catch (SqlException exception)
