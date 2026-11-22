@@ -121,6 +121,7 @@ app.MapGet("/health", async (
 
  /** rotas de lookup para clientes e produtos */
 app.MapLookups();
+app.MapOrders();
 
 app.Run();
 
