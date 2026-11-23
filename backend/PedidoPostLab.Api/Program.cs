@@ -9,6 +9,7 @@ using PedidoPostLab.Api.Data;
  * Importa o namespace que contém os endpoints de lookup para clientes e produtos.
  */ 
 using PedidoPostLab.Api.Endpoints;
+using PedidoPostLab.Api.Services;
 
 /*
  * Inicializa o construtor da aplicação web (Minimal API), carregando as
@@ -33,6 +34,9 @@ builder.Services.AddProblemDetails();
  */
 builder.Services.AddDbContext<PedidosDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+    builder.Services.AddScoped<IPedidoCreationService, PedidoCreationService>();
+
 
 /*
  * Constrói a instância final da aplicação com todos os serviços e configurações definidos acima.
