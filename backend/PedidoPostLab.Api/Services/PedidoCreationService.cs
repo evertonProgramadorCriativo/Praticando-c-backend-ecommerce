@@ -1,18 +1,26 @@
+using Microsoft.EntityFrameworkCore;
 using PedidoPostLab.Api.Contracts;
+using PedidoPostLab.Api.Data;
 
 namespace PedidoPostLab.Api.Services;
 
 public sealed class PedidoCreationService : IPedidoCreationService
 {
-    public Task<PedidoCreationResult> CreateAsync(
+    private readonly PedidosDbContext _db;
+
+    public PedidoCreationService(PedidosDbContext db)
+    {
+        _db = db;
+    }
+
+    public async Task<PedidoCreationResult> CreateAsync(
         CriarPedidoRequest request,
         CancellationToken cancellationToken)
     {
         var erroDeValidacao = Validar(request);
         if (erroDeValidacao is not null)
         {
-            return Task.FromResult(
-                PedidoCreationResult.Failure(PedidoCreationError.Validacao, erroDeValidacao));
+            return PedidoCreationResult.Failure(PedidoCreationError.Validacao, erroDeValidacao);
         }
 
         SortedDictionary<int, int> quantidadesPorProduto;
@@ -22,30 +30,65 @@ public sealed class PedidoCreationService : IPedidoCreationService
         }
         catch (OverflowException)
         {
-            return Task.FromResult(
-                PedidoCreationResult.Failure(
-                    PedidoCreationError.Validacao,
-                    "A quantidade total de um produto é grande demais."));
+            return PedidoCreationResult.Failure(
+                PedidoCreationError.Validacao,
+                "A quantidade total de um produto é grande demais.");
         }
 
-        // PROVISÓRIO: nos Blocos 10 e 11 isto passa a vir do banco.
-        var itens = quantidadesPorProduto
-            .Select(par => new ItemPedidoResponse(
-                ProdutoId: par.Key,
-                NomeProduto: "(ainda não consultado)",
-                Quantidade: par.Value,
-                PrecoUnitario: 0,
-                Subtotal: 0))
-            .ToList();
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
+        var clienteExiste = await _db.Clientes
+            .AsNoTracking()
+            .AnyAsync(c => c.Id == request.ClienteId, cancellationToken);
+
+        if (!clienteExiste)
+        {
+            return PedidoCreationResult.Failure(
+                PedidoCreationError.ClienteNaoEncontrado,
+                $"Cliente {request.ClienteId} não encontrado.");
+        }
+
+        var idsDosProdutos = quantidadesPorProduto.Keys.ToList();
+
+        var produtos = await _db.Produtos
+            .AsNoTracking()
+            .Where(p => idsDosProdutos.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, cancellationToken);
+
+        var idsAusentes = idsDosProdutos.Where(id => !produtos.ContainsKey(id)).ToList();
+        if (idsAusentes.Count > 0)
+        {
+            return PedidoCreationResult.Failure(
+                PedidoCreationError.ProdutoNaoEncontrado,
+                $"Produto(s) não encontrado(s): {string.Join(", ", idsAusentes)}.");
+        }
+
+        var itens = new List<ItemPedidoResponse>();
+        decimal valorTotal = 0;
+
+        foreach (var (produtoId, quantidade) in quantidadesPorProduto)
+        {
+            var produto = produtos[produtoId];
+            var subtotal = produto.PrecoUnitario * quantidade;
+            valorTotal += subtotal;
+
+            itens.Add(new ItemPedidoResponse(
+                ProdutoId: produtoId,
+                NomeProduto: produto.Nome,
+                Quantidade: quantidade,
+                PrecoUnitario: produto.PrecoUnitario,
+                Subtotal: subtotal));
+        }
+
+        // PROVISÓRIO: no Bloco 11 aqui entram a baixa de estoque, a gravação e o Commit.
         var pedido = new PedidoCriadoResponse(
             Id: 0,
             ClienteId: request.ClienteId,
             DataPedido: DateTime.UtcNow,
-            ValorTotal: 0,
+            ValorTotal: valorTotal,
             Itens: itens);
 
-        return Task.FromResult(PedidoCreationResult.Success(pedido));
+        return PedidoCreationResult.Success(pedido);
     }
 
     private static string? Validar(CriarPedidoRequest request)
